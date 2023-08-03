@@ -12,5 +12,11 @@ button {
 }
 
 .screen {
-    font-size: 25px;
+    padding: 5px;
+    font-size: 35px;
+    justify-content: right;
+    background-color: green;
+    color: white;
+    font-weight: bold;
+    font-family: 'Courier New'
 }
