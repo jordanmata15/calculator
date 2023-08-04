@@ -3,7 +3,12 @@ const OPERATIONS = {
     "-": (a, b) => +a - +b,
     "*": (a, b) => +a * +b,
     "/": (a, b) => (+b === 0) ? "REALLY...?" : +a / +b,
-    "": () => "ERR!",
+    null: () => "ERROR!",
+}
+const CALCULATION_STEP = {
+    INPUT_LEFT: 0,
+    OPERAND: 1,
+    INPUT_RIGHT: 2,
 }
 
 const screen = document.querySelector(".screen");
@@ -18,74 +23,101 @@ const numericButtonList = Array.from(buttons.querySelectorAll('button.number'))
 
 let leftOperand = "",
     rightOperand = "",
-    operator = ""
-    result = "";
+    selectedOperator = null
+    hasBeenCalculated = false;
 
-function operate(left, right, operator) {
-    let temp = OPERATIONS[operator](left, right)
-    clear();
-    result = temp;
-    leftOperand = result;
-    updateDisplay(result);
-}
-
-function changeOperator(newOperator) {
-    if (rightOpo)
-    operator = newOperator;
-}
-
-function appendCharacter(character) {
-    let toDisplay = "";
-    if (!operator) { // not finished with left operand yet
-        // avoid duplicate decimal points
-        let isDuplcateDecimal = (leftOperand.slice(-1) === ".") && character === ".";
-        leftOperand += isDuplcateDecimal ? "" : character;
-        toDisplay = +leftOperand;
-    } else {
-        let isDuplcateDecimal = (rightOperand.slice(-1) === ".") && character === ".";
-        rightOperand += isDuplcateDecimal ? "" : character;
-        toDisplay = +rightOperand;
+function calculate(left, right, operator) {
+    if (!left || !right || !operator) {
+        updateDisplay("ERROR!");
+        return;
     }
-
-    // converting to numeric with nothing after the decimal gives an error
-    if (character === ".") {
-        toDisplay = toDisplay + "";
-    } 
-    updateDisplay(toDisplay);
+    // the result is now the left operand in case of chained calculations
+    leftOperand = OPERATIONS[operator](left, right)
+    updateDisplay(leftOperand);
+    hasBeenCalculated = true;
 }
 
-function makeNegative() {
-    if (!operator) { // not finished with left operand yet
-        leftOperand = +leftOperand*(-1);
-    } else {
-        rightOperand = +rightOperand*(-1);
+function inputOperator(newOperator) {
+    // handle chained calculations
+    if (leftOperand && rightOperand && selectedOperator) {
+        if (!hasBeenCalculated) {
+            calculate(leftOperand, rightOperand, selectedOperator);
+        }
+        rightOperand = "";
     }
-    updateDisplay((!operator) ? +leftOperand : +rightOperand);
+    selectedOperator = newOperator;
+    activateButton(decimalButton);
+    hasBeenCalculated = false;
+}
+
+function inputCharacter(c) {
+    if (!selectedOperator) {
+        leftOperand += c;
+        updateDisplay(leftOperand);
+    } else {
+        rightOperand += c;
+        updateDisplay(rightOperand);
+    }
+    hasBeenCalculated = false;
+}
+
+function inputNegative() {
+    if (!selectedOperator) { // haven't finished creating the left operand
+        let terminatingDecimal = endsWithDecimal(leftOperand) ? "." : "";
+        leftOperand = +leftOperand*(-1) + terminatingDecimal;
+        updateDisplay(leftOperand);
+    } else {
+        let terminatingDecimal = endsWithDecimal(rightOperand) ? "." : "";
+        rightOperand = +rightOperand*(-1) + terminatingDecimal;
+        updateDisplay(rightOperand);
+    }
+    hasBeenCalculated = false;
+}
+
+function activateButton(button) {
+    if (button.classList.contains('disabled')) {
+        button.classList.remove('disabled');
+        button.disabled = false;
+    }
+}
+
+function deactivateButton(button) {
+    if (!button.classList.contains('disabled')) {
+        button.classList.add('disabled');
+        button.disabled = true;
+    }
 }
 
 function updateDisplay(newContent) {
-    screen.textContent = newContent;
+    screen.textContent = String(newContent);
+}
+
+function endsWithDecimal(number) {
+    return String(number).slice(-1) === ".";
 }
 
 function clear() {
-    leftOperand = "0";
-    rightOperand = "0";
-    operator = "";
-    result = "";
+    leftOperand = "";
+    rightOperand = "";
+    selectedOperator = null;
+    activateButton(decimalButton);
     updateDisplay(0);
 }
 
 
 function wireUpButtons() {
     operatorButtonList.forEach( button => {
-        button.addEventListener("click", () => changeOperator(button.textContent));
+        button.addEventListener("click", () => inputOperator(button.textContent));
     });
     numericButtonList.forEach( button => {
-        button.addEventListener("click", () => appendCharacter(button.textContent));
+        button.addEventListener("click", () => inputCharacter(button.textContent));
     });
-    plusMinusButton.addEventListener("click", () => makeNegative());
-    decimalButton.addEventListener("click", () => appendCharacter("."));
-    equalsButton.addEventListener("click", () => operate(leftOperand, rightOperand, operator));
+    decimalButton.addEventListener("click", () => {
+        inputCharacter(decimalButton.textContent);
+        deactivateButton(decimalButton);
+    });
+    plusMinusButton.addEventListener("click", () => inputNegative());
+    equalsButton.addEventListener("click", () => calculate(leftOperand, rightOperand, selectedOperator));
     clearButton.addEventListener("click", () => clear());
 }
 

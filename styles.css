@@ -20,3 +20,13 @@ button {
     font-weight: bold;
     font-family: 'Courier New'
 }
+
+button.disabled {
+    background-color: grey;   
+}
+
+.wide-button {
+    width: 104px;
+    height: 50px;
+    font-size: 25px;;
+}
