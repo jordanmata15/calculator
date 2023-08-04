@@ -10,6 +10,7 @@ const CALCULATION_STEP = {
     OPERAND: 1,
     INPUT_RIGHT: 2,
 }
+const SCREEN_NUM_SUPPORTED_CHARACTERS = 9;
 
 const screen = document.querySelector(".screen");
 const buttons = document.querySelector(".buttons");
@@ -51,7 +52,7 @@ function inputOperator(newOperator) {
 }
 
 function inputCharacter(c) {
-    if (!selectedOperator) {
+    if (!doneWithLeftOperand()) {
         leftOperand += c;
         updateDisplay(leftOperand);
     } else {
@@ -62,7 +63,8 @@ function inputCharacter(c) {
 }
 
 function inputNegative() {
-    if (!selectedOperator) { // haven't finished creating the left operand
+    // If we chain the inputs
+    if (!doneWithLeftOperand() || hasBeenCalculated) {
         let terminatingDecimal = endsWithDecimal(leftOperand) ? "." : "";
         leftOperand = +leftOperand*(-1) + terminatingDecimal;
         updateDisplay(leftOperand);
@@ -71,7 +73,6 @@ function inputNegative() {
         rightOperand = +rightOperand*(-1) + terminatingDecimal;
         updateDisplay(rightOperand);
     }
-    hasBeenCalculated = false;
 }
 
 function activateButton(button) {
@@ -89,7 +90,11 @@ function deactivateButton(button) {
 }
 
 function updateDisplay(newContent) {
-    screen.textContent = String(newContent);
+    screen.textContent = String(newContent).slice(0, SCREEN_NUM_SUPPORTED_CHARACTERS);
+}
+
+function doneWithLeftOperand() {
+    return leftOperand && selectedOperator;
 }
 
 function endsWithDecimal(number) {
